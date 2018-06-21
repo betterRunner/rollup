@@ -57,7 +57,7 @@ describe('function', () => {
 									})
 								);
 							})
-							.then(code => {
+							.then(({ output: [code] }) => {
 								if (config.generateError) {
 									unintendedError = new Error('Expected an error while generating output');
 								}

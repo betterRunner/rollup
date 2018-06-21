@@ -4,6 +4,7 @@ var path = require('path');
 module.exports = {
 	description: 'Dynamic import inlining',
 	options: {
+		inlineDynamicImports: true,
 		plugins: [
 			{
 				resolveDynamicImport(specifier, parent) {

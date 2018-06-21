@@ -50,7 +50,7 @@ describe('sourcemaps', () => {
 									throw new Error(`Unexpected warnings`);
 								}
 
-								return bundle.generate(outputOptions).then(({ code, map }) => {
+								return bundle.generate(outputOptions).then(({ output: [{ code, map }] }) => {
 									if (config.test) {
 										return config.test(code, map, { format });
 									}

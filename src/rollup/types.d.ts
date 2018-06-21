@@ -127,29 +127,34 @@ export type ResolveDynamicImportHook = (
 
 export type AddonHook = string | ((this: PluginContext) => string | Promise<string>);
 
+export interface OutputBundle {
+	[fileName: string]: OutputAsset | OutputChunk;
+}
+
 export interface Plugin {
 	name: string;
 	options?: (options: InputOptions) => InputOptions | void;
 	load?: LoadHook;
 	resolveId?: ResolveIdHook;
 	transform?: TransformHook;
-	// TODO: deprecate
+	/** @deprecated */
 	transformBundle?: TransformChunkHook;
 	transformChunk?: TransformChunkHook;
 	buildStart?: (this: PluginContext, options: InputOptions) => Promise<void> | void;
 	buildEnd?: (this: PluginContext, err?: any) => Promise<void> | void;
-	// TODO: deprecate
+	/** @deprecated */
 	ongenerate?: (
 		this: PluginContext,
 		options: OutputOptions,
 		chunk: OutputChunk
 	) => void | Promise<void>;
-	// TODO: deprecate
+	/** @deprecated */
 	onwrite?: (
 		this: PluginContext,
 		options: OutputOptions,
 		chunk: OutputChunk
 	) => void | Promise<void>;
+	/** @deprecated */
 	generateBundle?: (
 		this: PluginContext,
 		options: OutputOptions,
@@ -190,9 +195,8 @@ export interface InputOptions {
 	moduleContext?: string | ((id: string) => string) | { [id: string]: string };
 	watch?: WatcherOptions;
 	inlineDynamicImports?: boolean;
-	experimentalCodeSplitting?: boolean;
 	preserveSymlinks?: boolean;
-	experimentalPreserveModules?: boolean;
+	preserveModules?: boolean;
 	optimizeChunks?: boolean;
 	chunkGroupingSize?: number;
 	shimMissingExports?: boolean;
@@ -204,9 +208,13 @@ export interface InputOptions {
 
 	/** @deprecated */
 	entry?: string;
+	/** @deprecated */
 	transform?: TransformHook;
+	/** @deprecated */
 	load?: LoadHook;
+	/** @deprecated */
 	resolveId?: ResolveIdHook;
+	/** @deprecated */
 	resolveExternal?: any;
 }
 
@@ -250,21 +258,12 @@ export interface OutputOptions {
 	namespaceToStringTag?: boolean;
 	compact?: boolean;
 
-	// undocumented?
+	/** @deprecated */
 	noConflict?: boolean;
-
-	// deprecated
+	/** @deprecated */
 	dest?: string;
+	/** @deprecated */
 	moduleId?: string;
-}
-
-export interface OutputOptionsFile extends OutputOptions {
-	file?: string;
-}
-
-export interface OutputOptionsDir extends OutputOptions {
-	// only required for bundles.write
-	dir?: string;
 }
 
 export interface RollupWarning {
@@ -301,7 +300,12 @@ export interface SerializedTimings {
 	[label: string]: number;
 }
 
-export type OutputFile = string | Buffer | OutputChunk;
+export interface OutputAsset {
+	isAsset: true;
+	code?: undefined;
+	fileName: string;
+	source: string | Buffer;
+}
 
 export interface RenderedModule {
 	renderedExports: string[];
@@ -311,6 +315,8 @@ export interface RenderedModule {
 }
 
 export interface OutputChunk {
+	fileName: string;
+	isEntry: boolean;
 	imports: string[];
 	exports: string[];
 	modules: {
@@ -324,43 +330,26 @@ export interface RollupCache {
 	modules: ModuleJSON[];
 }
 
-export interface RollupSingleFileBuild {
-	// TODO: consider deprecating to match code splitting
-	imports: string[];
-	exports: { name: string; originalName: string; moduleId: string }[];
-	modules: ModuleJSON[];
-	cache: RollupCache;
-
-	generate: (outputOptions: OutputOptions) => Promise<OutputChunk>;
-	write: (options: OutputOptions) => Promise<OutputChunk>;
-	getTimings?: () => SerializedTimings;
-}
-
-export interface OutputBundle {
-	[fileName: string]: OutputChunk | OutputFile;
+export interface RollupOutput {
+	// when supported in TypeScript (https://github.com/Microsoft/TypeScript/pull/24897):
+	// output: [OutputChunk, ...(OutputChunk | OutputAsset)[]];
+	output: (OutputChunk | OutputAsset)[];
 }
 
 export interface RollupBuild {
 	cache: RollupCache;
-	generate: (outputOptions: OutputOptions) => Promise<{ output: OutputBundle }>;
-	write: (options: OutputOptions) => Promise<{ output: OutputBundle }>;
+	generate: (outputOptions: OutputOptions) => Promise<RollupOutput>;
+	write: (options: OutputOptions) => Promise<RollupOutput>;
 	getTimings?: () => SerializedTimings;
 }
 
-export interface RollupFileOptions extends InputOptions {
+export interface RollupOptions extends InputOptions {
 	cache?: RollupCache;
-	input: string;
-	output?: OutputOptionsFile;
+	input: string | string[] | { [entryName: string]: string };
+	output?: OutputOptions;
 }
 
-export interface RollupDirOptions extends InputOptions {
-	cache?: RollupCache;
-	input: string[] | { [entryName: string]: string };
-	output?: OutputOptionsDir;
-}
-
-export function rollup(options: RollupFileOptions): Promise<RollupSingleFileBuild>;
-export function rollup(options: RollupDirOptions): Promise<RollupBuild>;
+export function rollup(options: RollupOptions): Promise<RollupBuild>;
 
 export interface Watcher extends EventEmitter {}
 

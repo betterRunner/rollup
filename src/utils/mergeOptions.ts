@@ -200,8 +200,6 @@ function getInputOptions(
 		acornInjectPlugins: config.acornInjectPlugins,
 		cache: getOption('cache'),
 		context: config.context,
-		experimentalCodeSplitting: getOption('experimentalCodeSplitting'),
-		experimentalPreserveModules: getOption('experimentalPreserveModules'),
 		external: getExternal(config, command),
 		inlineDynamicImports: getOption('inlineDynamicImports', false),
 		input: getOption('input'),
@@ -213,11 +211,16 @@ function getInputOptions(
 		perf: getOption('perf', false),
 		plugins: config.plugins,
 		preferConst: getOption('preferConst'),
+		preserveModules: getOption('preserveModules'),
 		preserveSymlinks: getOption('preserveSymlinks'),
 		treeshake: getObjectOption(config, command, 'treeshake'),
 		shimMissingExports: getOption('shimMissingExports'),
 		watch: config.watch
 	};
+
+	// support rollup({ cache: prevBuildObject })
+	if (inputOptions.cache && (<any>inputOptions.cache).cache)
+		inputOptions.cache = (<any>inputOptions.cache).cache;
 
 	// legacy to make sure certain plugins still work
 	if (Array.isArray(inputOptions.input)) {
