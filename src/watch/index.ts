@@ -6,10 +6,9 @@ import rollup, { setWatcher } from '../rollup/index';
 import {
 	InputOptions,
 	ModuleJSON,
-	OutputChunk,
 	OutputOptions,
 	RollupBuild,
-	RollupSingleFileBuild,
+	RollupWatcher,
 	RollupWatchOptions
 } from '../rollup/types';
 import ensureArray from '../utils/ensureArray';
@@ -20,7 +19,8 @@ import { addTask, deleteTask } from './fileWatchers';
 
 const DELAY = 200;
 
-export class Watcher extends EventEmitter {
+export class Watcher {
+	emitter: RollupWatcher;
 	private buildTimeout: NodeJS.Timer;
 	private running: boolean;
 	private rerun: boolean = false;
@@ -28,10 +28,20 @@ export class Watcher extends EventEmitter {
 	private succeeded: boolean = false;
 
 	constructor(configs: RollupWatchOptions[]) {
-		super();
+		this.emitter = new class extends EventEmitter implements RollupWatcher {
+			close: () => void;
+			constructor(close: () => void) {
+				super();
+				this.close = close;
+			}
+		}(this.close.bind(this));
 		this.tasks = ensureArray(configs).map(config => new Task(this, config));
 		this.running = true;
 		process.nextTick(() => this.run());
+	}
+
+	emit(event: string, value: any) {
+		this.emitter.emit(event, value);
 	}
 
 	close() {
@@ -40,7 +50,7 @@ export class Watcher extends EventEmitter {
 			task.close();
 		});
 
-		this.removeAllListeners();
+		this.emitter.removeAllListeners();
 	}
 
 	invalidate() {
@@ -194,7 +204,7 @@ export class Task {
 			});
 		}
 
-		setWatcher(this.watcher);
+		setWatcher(this.watcher.emitter);
 		return rollup(options)
 			.then(result => {
 				if (this.closed) return;
@@ -218,11 +228,11 @@ export class Task {
 
 				return Promise.all(
 					this.outputs.map(output => {
-						return <Promise<OutputChunk | Record<string, OutputChunk>>>result.write(output);
+						return result.write(output);
 					})
 				).then(() => result);
 			})
-			.then((result: RollupSingleFileBuild | RollupBuild) => {
+			.then((result: RollupBuild) => {
 				this.watcher.emit('event', {
 					code: 'BUNDLE_END',
 					input: this.inputOptions.input,
@@ -266,5 +276,5 @@ export class Task {
 }
 
 export default function watch(configs: RollupWatchOptions[]) {
-	return new Watcher(configs);
+	return new Watcher(configs).emitter;
 }

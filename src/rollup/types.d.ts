@@ -66,7 +66,7 @@ export interface ModuleJSON {
 }
 
 export interface PluginContext {
-	watcher: Watcher;
+	watcher: EventEmitter;
 	resolveId: ResolveIdHook;
 	isExternal: IsExternal;
 	parse: (input: string, options: any) => ESTree.Program;
@@ -351,8 +351,6 @@ export interface RollupOptions extends InputOptions {
 
 export function rollup(options: RollupOptions): Promise<RollupBuild>;
 
-export interface Watcher extends EventEmitter {}
-
 // chokidar watch options
 export interface WatchOptions {
 	persistent?: boolean;
@@ -389,4 +387,8 @@ export interface RollupWatchOptions extends InputOptions {
 	watch?: WatcherOptions;
 }
 
-export function watch(configs: RollupWatchOptions[]): Watcher;
+export interface RollupWatcher extends EventEmitter {
+	close(): void;
+}
+
+export function watch(configs: RollupWatchOptions[]): RollupWatcher;
