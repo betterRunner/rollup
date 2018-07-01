@@ -3,7 +3,7 @@ import { ExecutionPathOptions } from '../../ExecutionPathOptions';
 import BlockScope from '../../scopes/FunctionScope';
 import FunctionScope from '../../scopes/FunctionScope';
 import Scope from '../../scopes/Scope';
-import { ObjectPath, UNKNOWN_EXPRESSION } from '../../values';
+import { ObjectPath, UNKNOWN_EXPRESSION, UNKNOWN_KEY, UNKNOWN_PATH } from '../../values';
 import BlockStatement from '../BlockStatement';
 import Identifier from '../Identifier';
 import { GenericEsTreeNode, NodeBase } from './Node';
@@ -78,17 +78,20 @@ export default class FunctionNode extends NodeBase {
 	}
 
 	parseNode(esTreeNode: GenericEsTreeNode) {
-		this.body = <BlockStatement>new this.context.nodeConstructors.BlockStatement(
-			esTreeNode.body,
-			this,
-			new Scope(this.scope)
+		this.body = <BlockStatement>(
+			new this.context.nodeConstructors.BlockStatement(esTreeNode.body, this, new Scope(this.scope))
 		);
 		super.parseNode(esTreeNode);
 	}
 
 	reassignPath(path: ObjectPath) {
-		if (path.length === 1 && path[0] === 'prototype') {
-			this.isPrototypeReassigned = true;
+		if (path.length === 1) {
+			if (path[0] === 'prototype') {
+				this.isPrototypeReassigned = true;
+			} else if (path[0] === UNKNOWN_KEY) {
+				this.isPrototypeReassigned = true;
+				this.scope.getReturnExpression().reassignPath(UNKNOWN_PATH);
+			}
 		}
 	}
 }
